@@ -431,8 +431,7 @@
 #endif
 
 #if USE_LIBINPUT || USE_BSD_LIBINPUT
-/*If only a single device of the same type is connected, you can also auto detect it, e.g.:
- *#define LIBINPUT_NAME   libinput_find_dev(LIBINPUT_CAPABILITY_TOUCH, false)*/
+/*If only a single device of the same type is connected, you can also auto detect it, e.g.: */
 #  define LIBINPUT_NAME   "/dev/input/event0"        /*You can use the "evtest" Linux tool to get the list of devices and test them*/
 
 #endif  /*USE_LIBINPUT || USE_BSD_LIBINPUT*/
@@ -449,7 +448,11 @@
 #endif
 
 #if USE_EVDEV || USE_BSD_EVDEV
+#ifdef GUPPY_FF5M
+#  define EVDEV_NAME   "/dev/input/event4"        /*You can use the "evtest" Linux tool to get the list of devices and test them*/
+#else
 #  define EVDEV_NAME   "/dev/input/event0"        /*You can use the "evtest" Linux tool to get the list of devices and test them*/
+#endif
 #  define EVDEV_SWAP_AXES         0               /*Swap the x and y axes of the touchscreen*/
 
 #  define EVDEV_CALIBRATE         1               /*Scale and offset the touchscreen coordinates by using maximum and minimum values for each axis*/
@@ -947,7 +950,8 @@
 #endif
 
 #if USE_EVDEV || USE_BSD_EVDEV
-#  define EVDEV_NAME   "/dev/input/event0"        /*You can use the "evtest" Linux tool to get the list of devices and test them*/
+#  define EVDEV_NAME   "/dev/input/event0"
+
 #  define EVDEV_SWAP_AXES         0               /*Swap the x and y axes of the touchscreen*/
 
 #  define EVDEV_CALIBRATE         1               /*Scale and offset the touchscreen coordinates by using maximum and minimum values for each axis*/

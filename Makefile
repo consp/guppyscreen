@@ -22,8 +22,14 @@ WARNINGS		:= -Wall -Wextra -Wno-unused-function -Wno-error=strict-prototypes -Wp
 					-Wno-unused-value -Wno-unused-parameter -Wno-missing-field-initializers -Wuninitialized -Wmaybe-uninitialized -Wall -Wextra -Wno-unused-parameter \
 					-Wno-missing-field-initializers -Wtype-limits -Wsizeof-pointer-memaccess -Wno-format-nonliteral -Wpointer-arith -Wno-cast-qual \
 					-Wunreachable-code -Wno-switch-default -Wreturn-type -Wmultichar -Wformat-security -Wno-sign-compare
-CFLAGS 			?= -O3 -g0 -MD -MP -I$(LVGL_DIR)/ $(WARNINGS) 
-LDFLAGS 		?= -lm -Llibhv/lib -Lspdlog/build -l:libhv.a -latomic -lpthread -Lwpa_supplicant/wpa_supplicant/ -l:libwpa_client.a -lstdc++fs -l:libspdlog.a
+CFLAGS 			?= -O3 -g0 -MD -MP -I$(LVGL_DIR)/ $(WARNINGS)
+ifndef FF5M
+LDFLAGS 		?= -lm -Llibhv/lib -Lspdlog/build -l:libhv.a -latomic -lpthread -Lwpa_supplicant/wpa_supplicant/ -l:libwpa_client.a -lstdc++fs -l:libspdlog.a 
+else
+CFLAGS 			?= -O3 -g0 -MD -MP -I$(LVGL_DIR)/ $(WARNINGS) --sysroot=$(SYSROOT)
+FF5M_CMAKE_FLAGS ?= -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX)
+LDFLAGS 		?= --sysroot=$(SYSROOT) -lm -Llibhv/lib -Lspdlog/build -l:libhv.a -latomic -lpthread  -Lwpa_supplicant/wpa_supplicant/ -l:libwpa_client.a -lstdc++fs -l:libspdlog.a -levdev
+endif
 BIN 			= guppyscreen
 BUILD_DIR 		= ./build
 BUILD_OBJ_DIR 	= $(BUILD_DIR)/obj
@@ -46,6 +52,11 @@ ASSET_DIR		= material
 ifdef GUPPY_SMALL_SCREEN
 ASSET_DIR		= material_46
 DEFINES			+= -D GUPPY_SMALL_SCREEN
+endif
+
+ifdef FF5M
+ASSET_DIR		= material_46
+DEFINES 		+= -D GUPPY_FF5M
 endif
 
 
@@ -103,7 +114,7 @@ libhv.a:
 
 libspdlog.a:
 	@mkdir -p $(SPDLOG_DIR)/build
-	@cmake -B $(SPDLOG_DIR)/build -S $(SPDLOG_DIR)/
+	@cmake $(FF5M_CMAKE_FLAGS) -B $(SPDLOG_DIR)/build -S $(SPDLOG_DIR)/
 	$(MAKE) -C $(SPDLOG_DIR)/build -j$(nproc)
 
 wpaclient:
