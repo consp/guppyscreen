@@ -22,6 +22,20 @@
 #include <mutex>
 #include <map>
 #include <memory>
+#include <vector>
+
+typedef struct prompt_button_t {
+    char *text;
+    char *command;
+    int type;
+} prompt_button;
+
+typedef struct prompt_data_t {
+    char *header;
+    char *text;
+    prompt_button *buttons;
+    int button_size;
+} prompt_data;
 
 class MainPanel : public NotifyConsumer {
  public:
@@ -45,6 +59,7 @@ class MainPanel : public NotifyConsumer {
   void handle_fanpanel_cb(lv_event_t *event);
   void handle_ledpanel_cb(lv_event_t *event);
   void handle_print_cb(lv_event_t *event);
+  void handle_macro_response(json &j);
 
   lv_obj_t *create_button(lv_obj_t *parent,
 			  const void *btn_img,
@@ -81,6 +96,8 @@ class MainPanel : public NotifyConsumer {
     panel->handle_print_cb(event);
   };
 
+  lv_obj_t *prompt(prompt_data *data);
+
  private:
   void create_main(lv_obj_t *parent);
   KWebSocketClient &ws;
@@ -116,5 +133,7 @@ class MainPanel : public NotifyConsumer {
   ButtonContainer action_btn;
   ButtonContainer led_btn;
   ButtonContainer print_btn;
+
+
 };
 #endif // __MAIN_PANEL_H__
