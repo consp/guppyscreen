@@ -6,6 +6,12 @@
 #include <time.h>
 #include <sys/time.h>
 #include <experimental/filesystem>
+#ifdef GUPPY_FF5M
+#include <libevdev-1.0/libevdev/libevdev.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <dirent.h>
+#endif
 
 namespace fs = std::experimental::filesystem;
 
@@ -267,6 +273,51 @@ static void hal_init(void) {
     lv_disp_set_theme(disp, th);
 
     evdev_init();
+#ifdef GUPPY_FF5M
+    /* the ff5m has a calibrated ts via tslib, which has a uinput device and gets added
+     * after all kernel initializations. This means it's probably the last one but this 
+     * is not certain, especially with custom usb camera's which can have input devices (buttons).
+     * We query evdev to fetch the uinput touchscreen event and then use that. */
+
+    struct libevdev *dev;
+    int err;
+    
+    // enumerate /dev/input/
+    DIR *dr = NULL;
+    struct dirent *entry;
+    char *event = NULL;
+    dr = opendir("/dev/input");
+    if (NULL != dr) {
+        while((entry = readdir(dr)) != NULL && event == NULL) {
+            asprintf(&event, "/dev/input/%s", entry->d_name);
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+                free(event);
+                event = NULL;
+                continue;
+            }
+            int fd = open(event, O_RDONLY|O_NONBLOCK);
+            err = libevdev_new_from_fd(fd, &dev);
+
+            if (err) {
+                free(event);
+                event = NULL;
+                continue;
+            }
+
+            const char *devname = libevdev_get_name(dev);
+            if (strcmp(devname, "ts_uinput") != 0) {
+                free(event);
+                event = NULL;
+            }
+            libevdev_free(dev);
+            close(fd);
+        }
+        closedir(dr);
+    }
+
+    evdev_set_file(event);
+#endif
+
     static lv_indev_drv_t indev_drv_1;
     lv_indev_drv_init(&indev_drv_1); /*Basic initialization*/
     indev_drv_1.type = LV_INDEV_TYPE_POINTER;
