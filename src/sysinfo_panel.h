@@ -28,6 +28,10 @@ class SysInfoPanel {
 
   lv_obj_t *disp_sleep_cont;
   lv_obj_t *display_sleep_dd;
+#ifdef GUPPY_FF5M
+  lv_obj_t *disp_brightness_cont;
+  lv_obj_t *disp_brightness_dd;
+#endif
 
   lv_obj_t *ll_cont;
   lv_obj_t *loglevel_dd;

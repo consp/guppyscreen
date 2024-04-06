@@ -74,6 +74,7 @@ void Config::init(std::string config_path) {
       {"thumbnail_path", "/usr/data/printer_data/thumbnails"},
       {"wpa_supplicant", "/var/run/wpa_supplicant"},
       {"display_sleep_sec", 600},
+      {"display_brightness", 70},
       {"printers", {{
 	    "k1", {
 	      {"moonraker_api_key", false},

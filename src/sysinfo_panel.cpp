@@ -2,6 +2,9 @@
 #include "utils.h"
 #include "config.h"
 #include "spdlog/spdlog.h"
+#ifdef GUPPY_FF5M
+#include "lv_drivers/display/fbdev.h"
+#endif
 
 #include <algorithm>
 #include <iterator>
@@ -46,6 +49,10 @@ SysInfoPanel::SysInfoPanel()
     // display sleep
   , disp_sleep_cont(lv_obj_create(left_cont))
   , display_sleep_dd(lv_dropdown_create(disp_sleep_cont))
+#ifdef GUPPY_FF5M
+  , disp_brightness_cont(lv_obj_create(left_cont))
+  , disp_brightness_dd(lv_dropdown_create(disp_brightness_cont))
+#endif
 
     // log level
   , ll_cont(lv_obj_create(left_cont))
@@ -86,6 +93,8 @@ SysInfoPanel::SysInfoPanel()
 			  "1 Hour\n"
 			  "5 Hours");
 
+
+
   auto v = conf->get_json("/display_sleep_sec");
   if (!v.is_null()) {
     auto sleep_sec = v.template get<int32_t>();
@@ -96,6 +105,34 @@ SysInfoPanel::SysInfoPanel()
   }
   lv_obj_add_event_cb(display_sleep_dd, &SysInfoPanel::_handle_callback,
 		      LV_EVENT_VALUE_CHANGED, this);
+
+#ifdef GUPPY_FF5M
+  lv_obj_t *l2 = lv_label_create(disp_brightness_cont);
+  lv_obj_set_size(disp_brightness_cont, LV_PCT(100), LV_SIZE_CONTENT);
+  lv_obj_set_style_pad_all(disp_brightness_cont, 0, 0);
+  lv_label_set_text(l2, "Display brightness");
+  lv_obj_align(l2, LV_ALIGN_LEFT_MID, 0, 0);
+  lv_obj_align(disp_brightness_dd, LV_ALIGN_RIGHT_MID, 0, 0);
+  lv_dropdown_set_options(disp_brightness_dd,
+			  "10\n"
+			  "20\n"
+			  "30\n"
+			  "40\n"
+			  "50\n"
+			  "60\n"
+			  "70\n"
+			  "80\n"
+			  "90\n"
+			  "100");
+
+  auto v2 = conf->get_json("/display_brightness");
+  if (!v2.is_null()) {
+    auto bn = v2.template get<int32_t>();
+    lv_dropdown_set_selected(disp_brightness_dd, (bn/10)-1);
+  }
+  lv_obj_add_event_cb(disp_brightness_dd, &SysInfoPanel::_handle_callback,
+		      LV_EVENT_VALUE_CHANGED, this);
+#endif
   
   lv_obj_set_size(ll_cont, LV_PCT(100), LV_SIZE_CONTENT);
   lv_obj_set_style_pad_all(ll_cont, 0, 0);
@@ -204,6 +241,15 @@ void SysInfoPanel::handle_callback(lv_event_t *e) {
 	conf->set<int32_t>("/display_sleep_sec", el->second);
 	conf->save();
       }
+#ifdef GUPPY_FF5M
+    } else if (obj == disp_brightness_dd) {
+        char buf[5]; // max 100
+        lv_dropdown_get_selected_str(disp_brightness_dd, buf, sizeof(buf));
+        int bn = atoi(buf);
+        conf->set<int32_t>("/display_brightness", bn);
+        conf->save();
+        fbdev_brightness(bn);
+#endif
     }
   }
 }
