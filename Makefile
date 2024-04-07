@@ -55,7 +55,7 @@ DEFINES			+= -D GUPPY_SMALL_SCREEN
 endif
 
 ifdef FF5M
-ASSET_DIR		= material_46
+ASSET_DIR		= material
 DEFINES 		+= -D GUPPY_FF5M
 endif
 
@@ -154,6 +154,8 @@ wpaclean:
 
 clean:
 	rm -rf $(BUILD_DIR)
+
+cleanall: clean wpaclean libhvclean spdlogclean
 
 install:
 	install -d $(DESTDIR)$(bindir)
