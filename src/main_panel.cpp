@@ -64,6 +64,7 @@ MainPanel::MainPanel(KWebSocketClient &websocket,
 
     ws.register_notify_update(this);    
     ws.register_method_callback("notify_gcode_response", "MainPanel",[this](json& d) { this->handle_macro_response(d); });
+
     pdata = (prompt_data *) calloc(1, sizeof(prompt_data));
     pdata->header = NULL;
     pdata->text = NULL;
@@ -213,6 +214,11 @@ void MainPanel::create_main(lv_obj_t * parent)
 
     lv_obj_set_flex_grow(main_cont, 1);
     lv_obj_set_grid_dsc_array(main_cont, grid_main_col_dsc, grid_main_row_dsc);    
+#ifdef GUPPY_FF5M
+    lv_obj_set_style_pad_top(main_cont, 0, 0);
+    lv_obj_set_style_pad_bottom(main_cont, 0, 0);
+#endif
+
 
     lv_obj_set_grid_cell(homing_btn.get_container(), LV_GRID_ALIGN_CENTER, 2, 1, LV_GRID_ALIGN_CENTER, 0, 1);
     lv_obj_set_grid_cell(extrude_btn.get_container(), LV_GRID_ALIGN_CENTER, 3, 1, LV_GRID_ALIGN_CENTER, 0, 1);
@@ -221,13 +227,23 @@ void MainPanel::create_main(lv_obj_t * parent)
     lv_obj_set_grid_cell(print_btn.get_container(), LV_GRID_ALIGN_CENTER, 2, 2, LV_GRID_ALIGN_CENTER, 2, 1);
 
     lv_obj_clear_flag(temp_cont, LV_OBJ_FLAG_SCROLLABLE);
+#ifdef GUPPY_FF5M
+    lv_obj_set_size(temp_cont, LV_PCT(50), LV_PCT(62));
+    lv_obj_set_style_pad_top(temp_cont, 4, 0);
+    lv_obj_set_style_pad_bottom(temp_cont, 0, 0);
+#else
     lv_obj_set_size(temp_cont, LV_PCT(50), LV_PCT(50));
+#endif
     
     lv_obj_set_flex_flow(temp_cont, LV_FLEX_FLOW_ROW_WRAP);
-    lv_obj_set_grid_cell(temp_cont, LV_GRID_ALIGN_START, 0, 2, LV_GRID_ALIGN_CENTER, 0, 2);
+    lv_obj_set_grid_cell(temp_cont, LV_GRID_ALIGN_START, 0, 2, LV_GRID_ALIGN_START, 0, 2);
     
     lv_obj_align(temp_chart, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_size(temp_chart, LV_PCT(45), LV_PCT(40));
+#ifdef GUPPY_FF5M
+    lv_obj_set_style_pad_top(temp_chart, 0, 0);
+    lv_obj_set_style_pad_bottom(temp_chart, 4, 0);
+#endif
     lv_obj_set_style_size(temp_chart, 0, LV_PART_INDICATOR);
 
     lv_chart_set_range(temp_chart, LV_CHART_AXIS_PRIMARY_Y, 0, 300);
