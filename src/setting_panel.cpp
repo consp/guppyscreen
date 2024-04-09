@@ -44,6 +44,10 @@ SettingPanel::SettingPanel(KWebSocketClient &c, std::mutex &l, lv_obj_t *parent,
   lv_obj_set_size(cont, LV_PCT(100), LV_PCT(100));
 
   spoolman_btn.disable();
+#ifdef GUPPY_FF5M
+  // needs to be disabled as it's compiled into the buildroot environment
+  guppy_update_btn.disable();
+#endif
 
   static lv_coord_t grid_main_row_dsc[] = {LV_GRID_FR(2), LV_GRID_FR(5), LV_GRID_FR(5), LV_GRID_TEMPLATE_LAST};
   static lv_coord_t grid_main_col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1),
