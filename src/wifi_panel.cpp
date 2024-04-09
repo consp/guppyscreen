@@ -86,6 +86,8 @@ WifiPanel::WifiPanel(std::mutex &l)
   lv_obj_set_size(password_input, LV_PCT(80), LV_SIZE_CONTENT);
   lv_textarea_set_password_mode(password_input, true);
   lv_textarea_set_one_line(password_input, true);
+  lv_obj_set_style_border_width(password_input, 1, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_border_color(password_input, lv_color_white(), LV_PART_MAIN | LV_STATE_DEFAULT);
 
   lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
   lv_obj_add_event_cb(password_input, &WifiPanel::_handle_kb_input, LV_EVENT_FOCUSED, this);
