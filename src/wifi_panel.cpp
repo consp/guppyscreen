@@ -162,7 +162,7 @@ void WifiPanel::handle_callback(lv_event_t *e) {
     } else {
 
     if (cur_network.length() > 0 && cur_network == selected_network) {
-      auto ip = KUtils::interface_ip(Config::get_instance()->get_wifi_interface());
+      auto ip = KUtils::interface_ip(KUtils::get_wifi_interface());
       lv_label_set_text(wifi_label, fmt::format("Connected to network {}\nIP: {}",
 						selected_network,
 						ip).c_str());
@@ -177,7 +177,6 @@ void WifiPanel::handle_callback(lv_event_t *e) {
       lv_label_set_text(wifi_label, fmt::format("Enter password for {}", selected_network).c_str());
       lv_obj_clear_flag(password_input, LV_OBJ_FLAG_HIDDEN);
       lv_event_send(password_input, LV_EVENT_FOCUSED, NULL);
-    }
     }
 
     lv_obj_clear_flag(prompt_cont, LV_OBJ_FLAG_HIDDEN);
@@ -217,7 +216,7 @@ void WifiPanel::handle_wpa_event(const std::string &event) {
 	  if (cur_network == wifi_parts[4]) {
 	    spdlog::trace("adding symbol with ok");
 	    lv_table_set_cell_value(wifi_table, index, 1, LV_SYMBOL_OK);
-	    auto ip = KUtils::interface_ip(Config::get_instance()->get_wifi_interface());
+	    auto ip = KUtils::interface_ip(KUtils::get_wifi_interface());
 	    lv_label_set_text(wifi_label, fmt::format("Connected to network {}\nIP: {}",
 						      cur_network,
 						      ip).c_str());
@@ -257,7 +256,7 @@ void WifiPanel::handle_wpa_event(const std::string &event) {
 	if (cur_network == wifi.first) {
 	  spdlog::trace("adding symbol with ok");
 	  lv_table_set_cell_value(wifi_table, index, 1, LV_SYMBOL_OK);
-	    auto ip = KUtils::interface_ip(Config::get_instance()->get_wifi_interface());
+	    auto ip = KUtils::interface_ip(KUtils::get_wifi_interface());
 	    lv_label_set_text(wifi_label, fmt::format("Connected to network {}\nIP: {}",
 						      cur_network,
 						      ip).c_str());
@@ -278,10 +277,10 @@ void WifiPanel::handle_kb_input(lv_event_t *e)
 {
   const lv_event_code_t code = lv_event_get_code(e);
 
-  if(code == LV_EVENT_FOCUSED) {
+  if (code == LV_EVENT_FOCUSED) {
     lv_keyboard_set_textarea(kb, password_input);
     lv_obj_clear_flag(kb, LV_OBJ_FLAG_HIDDEN);
-  } else if(code == LV_EVENT_DEFOCUSED) {
+  } else if (code == LV_EVENT_DEFOCUSED) {
     lv_keyboard_set_textarea(kb, NULL);
     lv_label_set_text(wifi_label, "Please select your wifi network");
     lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);

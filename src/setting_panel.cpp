@@ -24,7 +24,9 @@ LV_IMG_DECLARE(print);
 SettingPanel::SettingPanel(KWebSocketClient &c, std::mutex &l, lv_obj_t *parent, SpoolmanPanel &sm)
   : ws(c)
   , cont(lv_obj_create(parent))
+#ifndef OS_ANDROID
   , wifi_panel(l)
+#endif
   , sysinfo_panel()
   , spoolman_panel(sm)
   , wifi_btn(cont, &network_img, "WIFI", &SettingPanel::_handle_callback, this)
@@ -44,9 +46,14 @@ SettingPanel::SettingPanel(KWebSocketClient &c, std::mutex &l, lv_obj_t *parent,
   lv_obj_set_size(cont, LV_PCT(100), LV_PCT(100));
 
   spoolman_btn.disable();
+
 #ifdef GUPPY_FF5M
   // needs to be disabled as it's compiled into the buildroot environment
   guppy_update_btn.disable();
+#endif
+
+#ifdef OS_ANDROID
+  wifi_btn.disable();
 #endif
 
   static lv_coord_t grid_main_row_dsc[] = {LV_GRID_FR(2), LV_GRID_FR(5), LV_GRID_FR(5), LV_GRID_TEMPLATE_LAST};
@@ -86,7 +93,9 @@ void SettingPanel::handle_callback(lv_event_t *event) {
 
     if (btn == wifi_btn.get_container()) {
       spdlog::trace("wifi pressed");
+#ifndef OS_ANDROID
       wifi_panel.foreground();
+#endif
     } else if (btn == sysinfo_btn.get_container()) {
       spdlog::trace("setting system info pressed");
       sysinfo_panel.foreground();
@@ -104,10 +113,10 @@ void SettingPanel::handle_callback(lv_event_t *event) {
       Config *conf = Config::get_instance();
       auto init_script = conf->get<std::string>("/guppy_init_script");
       const fs::path script(init_script);
-      if (fs::exists(script)) {
-	sp::call({init_script, "restart"});
+      if (fs::exists(script) || init_script.rfind("service guppyscreen", 0) == 0) {
+        sp::call({init_script, "restart"});
       } else {
-	spdlog::warn("Failed to restart Guppy Screen. Did not find restart script.");
+        	spdlog::warn("Failed to restart Guppy Screen. Did not find restart script.");
       }
     } else if (btn == guppy_update_btn.get_container()) {
       spdlog::trace("update guppy pressed");

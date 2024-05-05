@@ -235,6 +235,8 @@ void MainPanel::create_main(lv_obj_t * parent)
     lv_obj_set_size(temp_cont, LV_PCT(50), LV_PCT(50));
 #endif
     
+    lv_obj_set_style_pad_all(temp_cont, 0, 0);
+
     lv_obj_set_flex_flow(temp_cont, LV_FLEX_FLOW_ROW_WRAP);
     lv_obj_set_grid_cell(temp_cont, LV_GRID_ALIGN_START, 0, 2, LV_GRID_ALIGN_START, 0, 2);
     

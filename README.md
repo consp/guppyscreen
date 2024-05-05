@@ -32,16 +32,37 @@ sh -c "$(wget --no-check-certificate -qO - https://raw.githubusercontent.com/bal
 sh -c "$(wget --no-check-certificate -qO - https://raw.githubusercontent.com/ballaswag/guppyscreen/main/installer.sh)" -s zbolt
 ```
 
+### Install on a PI (Debian/Raspbian)
+Tested on a BTT Pad 7. Please install with care and make sure you're okay with resetting your setup if things break.
+```
+wget -O - https://raw.githubusercontent.com/ballaswag/guppyscreen/main/installer-deb.sh | bash
+```
+
+### Nightly Builds
+#### Material (Nightly)
+```
+sh -c "$(wget --no-check-certificate -qO - https://raw.githubusercontent.com/ballaswag/guppyscreen/main/installer.sh)" -s nightly
+```
+
+#### Z-Bolt (Nightly)
+```
+sh -c "$(wget --no-check-certificate -qO - https://raw.githubusercontent.com/ballaswag/guppyscreen/main/installer.sh)" -s zbolt nightly
+```
+
+#### Raspbian Variant (Nightly)
+```
+wget -O - https://raw.githubusercontent.com/ballaswag/guppyscreen/main/installer-deb.sh | bash -s nightly
+```
+
+### Android
+Guppy Screen works on Android! Download and try with the latest [APK](https://github.com/ballaswag/guppyscreen/releases/latest/download/app-release.apk).  
+  
+<img src="https://github.com/ballaswag/guppyscreen/assets/145094472/d0437cd6-9b82-470f-8889-c4a5b74bfa6e" alt="guppyscreen on android" width="600" />
+
 ## Uninstall
 ssh into your K1/Max and run the follwow command:
 ```
 /usr/data/guppyscreen/reinstall-creality.sh
-```
-
-### Install on aarch64 (Debian Bullseye) - Experimental
-Tested on a BTT Pad 7. Please install with care and make sure you're okay with resetting your setup if things break.
-```
-wget -O - https://raw.githubusercontent.com/ballaswag/guppyscreen/main/installer-deb.sh | bash
 ```
 
 ## Features
@@ -67,6 +88,9 @@ wget -O - https://raw.githubusercontent.com/ballaswag/guppyscreen/main/installer
 :bangbang: Firmware Retraction  
 
 Open for feature requests.
+
+## Documentation
+You can find various Guppy Screen documents [here](https://ballaswag.github.io/docs/guppyscreen/configuration/).
 
 ## Screenshot
 ### Material Theme

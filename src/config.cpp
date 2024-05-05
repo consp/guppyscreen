@@ -1,4 +1,5 @@
 #include "config.h"
+#include "platform.h"
 
 #include <sys/stat.h>
 #include <fstream>
@@ -19,7 +20,7 @@ Config *Config::get_instance() {
   return instance;
 }
 
-void Config::init(std::string config_path) {
+void Config::init(std::string config_path, const std::string thumbdir) {
   path = config_path;
   struct stat buffer;
   json fans_conf = {
@@ -60,69 +61,69 @@ void Config::init(std::string config_path) {
 
   json cooldown_conf = {{ "cooldown", "SET_HEATER_TEMPERATURE HEATER=extruder TARGET=0\nSET_HEATER_TEMPERATURE HEATER=heater_bed TARGET=0"}};
   json default_macros_conf = {
-    {"load_filament", "LOAD_MATERIAL"},
-    {"unload_filament", "QUIT_MATERIAL"}
+    {"load_filament", "_GUPPY_LOAD_MATERIAL"},
+    {"unload_filament", "_GUPPY_QUIT_MATERIAL"}
   };
 
   if (stat(config_path.c_str(), &buffer) == 0) {
     data = json::parse(std::fstream(config_path));
-
   } else {
     data = {
-      {"default_printer", "k1"},
-      {"log_path", "/usr/data/printer_data/logs/guppyscreen.log"},
-      {"thumbnail_path", "/usr/data/printer_data/thumbnails"},
-      {"wpa_supplicant", "/var/run/wpa_supplicant"},
-      {"display_sleep_sec", 600},
-      {"display_brightness", 70},
-      {"printers", {{
-	    "k1", {
-	      {"moonraker_api_key", false},
-	      {"moonraker_host", "127.0.0.1"},
-	      {"moonraker_port", 7125},
-	      {"monitored_sensors", sensors_conf},
-	      {"fans", fans_conf},
-	      {"default_macros", default_macros_conf},
-	    }
-	  }}
-      }
+        {"log_path", "/usr/data/printer_data/logs/guppyscreen.log"},
+        {"thumbnail_path", thumbdir},
+        {"wpa_supplicant", "/var/run/wpa_supplicant"},
+        {"display_sleep_sec", 600}
+#ifndef OS_ANDROID
+        , {"default_printer", "k1"},
+        {"printers", {{"k1", {
+                                 {"moonraker_api_key", false},
+                                 {"moonraker_host", "127.0.0.1"},
+                                 {"moonraker_port", 7125},
+                                 {"monitored_sensors", sensors_conf},
+                                 {"fans", fans_conf},
+                                 {"default_macros", default_macros_conf},
+                             }}}
+        }
+#endif
     };
-    
-  }
-  
-  std::string df_name = data["/default_printer"_json_pointer];
-  default_printer = "/printers/" + df_name + "/";
-
-  auto &monitored_sensors = data[json::json_pointer(df() + "monitored_sensors")];
-  if (monitored_sensors.is_null()) {
-    data[json::json_pointer(df() + "monitored_sensors")] = sensors_conf;
   }
 
-  auto &fans = data[json::json_pointer(df() + "fans")];
-  if (fans.is_null()) {
-    data[json::json_pointer(df() + "fans")] = fans_conf;
-  }
+  data["config_path"] = config_path;
 
-  auto &default_macros = data[json::json_pointer(df() + "default_macros")];
-  if (default_macros.is_null()) {
-    default_macros_conf.merge_patch(cooldown_conf);
-    data[json::json_pointer(df() + "default_macros")] = default_macros_conf;
-  } else {
-    if (!default_macros.contains("cooldown")) {
-      default_macros.merge_patch(cooldown_conf);
+  auto df_name = data["/default_printer"_json_pointer];
+  if (!df_name.is_null()) {
+    default_printer = "/printers/" + df_name.template get<std::string>() + "/";
+
+    auto &monitored_sensors = data[json::json_pointer(df() + "monitored_sensors")];
+    if (monitored_sensors.is_null()) {
+      data[json::json_pointer(df() + "monitored_sensors")] = sensors_conf;
+    }
+
+    auto &fans = data[json::json_pointer(df() + "fans")];
+    if (fans.is_null()) {
+      data[json::json_pointer(df() + "fans")] = fans_conf;
+    }
+
+    auto &default_macros = data[json::json_pointer(df() + "default_macros")];
+    if (default_macros.is_null()) {
+      default_macros_conf.merge_patch(cooldown_conf);
+      data[json::json_pointer(df() + "default_macros")] = default_macros_conf;
+    } else {
+      if (!default_macros.contains("cooldown")) {
+        default_macros.merge_patch(cooldown_conf);
+      }
+    }
+
+    auto &guppy_init = data["/guppy_init_script"_json_pointer];
+    if (guppy_init.is_null()) {
+      data["/guppy_init_script"_json_pointer] = "/etc/init.d/S99guppyscreen";
+    }
+
+    auto &ll = data[json::json_pointer(df() + "log_level")];
+    if (ll.is_null()) {
+      data[json::json_pointer(df() + "log_level")] = "debug";
     }
   }
-
-  auto &guppy_init = data["/guppy_init_script"_json_pointer];
-  if (guppy_init.is_null()) {
-    data["/guppy_init_script"_json_pointer] = "/etc/init.d/S99guppyscreen";
-  }
-  
-  auto &ll = data[json::json_pointer(df() + "log_level")];
-  if (ll.is_null()) {
-    data[json::json_pointer(df() + "log_level")] = "debug";
-  }
-
   auto &rotate = data["/display_rotate"_json_pointer];
   if (rotate.is_null()) {
 #ifdef GUPPY_ROTATE
@@ -167,6 +168,10 @@ std::string Config::get_wifi_interface() {
   return fs::path(get<std::string>("/wpa_supplicant"))
     .filename()
     .string();
+}
+
+std::string Config::get_path() {
+    return path;
 }
 
 json &Config::get_json(const std::string &json_path) {

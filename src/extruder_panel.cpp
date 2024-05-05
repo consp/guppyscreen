@@ -44,19 +44,22 @@ ExtruderPanel::ExtruderPanel(KWebSocketClient &websocket_client,
   , cooldown_macro("SET_HEATER_TEMPERATURE HEATER=extruder TARGET=0")
 {
   Config *conf = Config::get_instance();
-  auto v = conf->get_json(conf->df() + "default_macros/load_filament");
-  if (!v.is_null()) {
-    load_filament_macro = v.template get<std::string>();
-  }
+  auto df = conf->get_json("/default_printer");
+  if (!df.empty()) {
+    auto v = conf->get_json(conf->df() + "default_macros/load_filament");
+    if (!v.is_null()) {
+      load_filament_macro = v.template get<std::string>();
+    }
 
-  v = conf->get_json(conf->df() + "default_macros/unload_filament");
-  if (!v.is_null()) {
-    unload_filament_macro = v.template get<std::string>();
-  }
+    v = conf->get_json(conf->df() + "default_macros/unload_filament");
+    if (!v.is_null()) {
+      unload_filament_macro = v.template get<std::string>();
+    }
 
-  v = conf->get_json(conf->df() + "default_macros/cooldown");
-  if (!v.is_null()) {
-    cooldown_macro = v.template get<std::string>();
+    v = conf->get_json(conf->df() + "default_macros/cooldown");
+    if (!v.is_null()) {
+      cooldown_macro = v.template get<std::string>();
+    }
   }
 
   lv_obj_move_background(panel_cont);
@@ -199,11 +202,25 @@ void ExtruderPanel::handle_callback(lv_event_t *e) {
     }
 
     if (btn == unload_btn.get_container()) {
-      ws.gcode_script(unload_filament_macro);
+      if (unload_filament_macro == "_GUPPY_QUIT_MATERIAL") {
+        const char *temp = lv_btnmatrix_get_btn_text(temp_selector.get_selector(),
+                                                     temp_selector.get_selected_idx());
+        ws.gcode_script(fmt::format("{} EXTRUDER_TEMP={}", unload_filament_macro, temp));
+      } else {
+        ws.gcode_script(unload_filament_macro);
+      }
     }
 
     if (btn == load_btn.get_container()) {
-      ws.gcode_script(load_filament_macro);
+      if (load_filament_macro == "_GUPPY_LOAD_MATERIAL") {
+        const char *temp = lv_btnmatrix_get_btn_text(temp_selector.get_selector(),
+                                                     temp_selector.get_selected_idx());
+        const char *len = lv_btnmatrix_get_btn_text(length_selector.get_selector(),
+                                                    length_selector.get_selected_idx());
+        ws.gcode_script(fmt::format("{} EXTRUDER_TEMP={} EXTRUDE_LEN={}", load_filament_macro, temp, len));
+      } else {
+        ws.gcode_script(load_filament_macro);
+      }
     }
 
     if (btn == cooldown_btn.get_container()) {

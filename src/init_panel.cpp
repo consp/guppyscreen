@@ -9,25 +9,26 @@
 
 InitPanel::InitPanel(MainPanel &mp, BedMeshPanel &bmp, std::mutex& l)
   : cont(lv_obj_create(lv_scr_act()))
-  , label_cont(lv_obj_create(cont))
-  , label(lv_label_create(label_cont))
+  , label(lv_label_create(cont))
   , main_panel(mp)
   , bedmesh_panel(bmp)
   , lv_lock(l)
 {
-  lv_obj_set_size(cont, LV_PCT(55), LV_PCT(30));
-  lv_obj_align(cont, LV_ALIGN_TOP_MID, 0, 0);  
+  lv_obj_set_size(cont, LV_PCT(55), LV_SIZE_CONTENT);
+  lv_obj_align(cont, LV_ALIGN_TOP_MID, 0, 15);  
   
   lv_obj_clear_flag(cont, LV_OBJ_FLAG_SCROLLABLE);
-  // lv_obj_set_style_bg_opa(cont, LV_OPA_70, 0);
-
-  lv_obj_set_size(label_cont, LV_PCT(100), LV_PCT(100));
-  lv_obj_set_style_border_width(label_cont, 2, 0);
-  lv_obj_set_style_bg_color(label_cont, lv_palette_darken(LV_PALETTE_GREY, 1), 0);
+  lv_obj_set_style_bg_color(cont, lv_palette_darken(LV_PALETTE_GREY, 1), 0);
   
-  lv_obj_align(label_cont, LV_ALIGN_CENTER, 0, 0);  
+  lv_obj_set_size(label, LV_PCT(100), LV_SIZE_CONTENT);
 
-  lv_label_set_text(label, LV_SYMBOL_WARNING " Waiting for printer to initialize...");
+  Config *conf = Config::get_instance();
+  if (!conf->get_json("/default_printer").is_null()) {
+    lv_label_set_text(label, LV_SYMBOL_WARNING " Waiting for printer to initialize...");
+  } else {
+    lv_label_set_text(label, "Welcome to Guppy Screen. Use the Setting Panel to add your printers.");
+  }
+  lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
   lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
 }
 
@@ -40,10 +41,11 @@ InitPanel::~InitPanel() {
 
 void InitPanel::connected(KWebSocketClient &ws) {
   spdlog::debug("init panel connected");
-  ws.send_jsonrpc("printer.objects.list",
-      [this, &ws](json& d) {
-	State *state = State::get_instance();
-	state->reset();
+  State *state = State::get_instance();
+  state->reset();
+
+  ws.send_jsonrpc("printer.objects.list", [this, &ws](json& d) {
+    State *state = State::get_instance();
 	state->set_data("printer_objs", d, "/result");
 
 	ws.send_jsonrpc("server.files.roots",
@@ -128,4 +130,8 @@ void InitPanel::disconnected(KWebSocketClient &ws) {
   std::lock_guard<std::mutex> lock(lv_lock);
   lv_obj_clear_flag(cont, LV_OBJ_FLAG_HIDDEN);
   lv_obj_move_foreground(cont);
+}
+
+void InitPanel::set_message(const char *message) {
+	lv_label_set_text(label, message);
 }
