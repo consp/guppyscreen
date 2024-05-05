@@ -161,7 +161,7 @@ void WifiPanel::handle_callback(lv_event_t *e) {
         find_current_network();
     } else {
         if (cur_network.length() > 0 && cur_network == selected_network) {
-            auto ip = KUtils::interface_ip(KUtils::get_wifi_interface());
+            auto ip = KUtils::interface_ip(Config::get_instance()->get_wifi_interface());
             lv_label_set_text(wifi_label, fmt::format("Connected to network {}\nIP: {}",
                                 selected_network,
                                 ip).c_str());
@@ -216,7 +216,7 @@ void WifiPanel::handle_wpa_event(const std::string &event) {
 	  if (cur_network == wifi_parts[4]) {
 	    spdlog::trace("adding symbol with ok");
 	    lv_table_set_cell_value(wifi_table, index, 1, LV_SYMBOL_OK);
-	    auto ip = KUtils::interface_ip(KUtils::get_wifi_interface());
+        auto ip = KUtils::interface_ip(Config::get_instance()->get_wifi_interface());
 	    lv_label_set_text(wifi_label, fmt::format("Connected to network {}\nIP: {}",
 						      cur_network,
 						      ip).c_str());
@@ -256,7 +256,7 @@ void WifiPanel::handle_wpa_event(const std::string &event) {
 	if (cur_network == wifi.first) {
 	  spdlog::trace("adding symbol with ok");
 	  lv_table_set_cell_value(wifi_table, index, 1, LV_SYMBOL_OK);
-	    auto ip = KUtils::interface_ip(KUtils::get_wifi_interface());
+        auto ip = KUtils::interface_ip(Config::get_instance()->get_wifi_interface());
 	    lv_label_set_text(wifi_label, fmt::format("Connected to network {}\nIP: {}",
 						      cur_network,
 						      ip).c_str());
