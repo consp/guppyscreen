@@ -160,23 +160,23 @@ void WifiPanel::handle_callback(lv_event_t *e) {
         // need to reload known network list id's
         find_current_network();
     } else {
+        if (cur_network.length() > 0 && cur_network == selected_network) {
+            auto ip = KUtils::interface_ip(KUtils::get_wifi_interface());
+            lv_label_set_text(wifi_label, fmt::format("Connected to network {}\nIP: {}",
+                                selected_network,
+                                ip).c_str());
+            lv_obj_add_flag(password_input, LV_OBJ_FLAG_HIDDEN);
 
-    if (cur_network.length() > 0 && cur_network == selected_network) {
-      auto ip = KUtils::interface_ip(KUtils::get_wifi_interface());
-      lv_label_set_text(wifi_label, fmt::format("Connected to network {}\nIP: {}",
-						selected_network,
-						ip).c_str());
-      lv_obj_add_flag(password_input, LV_OBJ_FLAG_HIDDEN);
-
-    } else if (list_networks.count(selected_network)) {
-        // clear all "tags"
-      auto nid = list_networks.find(selected_network)->second;
-      wpa_event.send_command(fmt::format("SELECT_NETWORK {}", nid));
-      wpa_event.send_command("SAVE_CONFIG");
-    } else {
-      lv_label_set_text(wifi_label, fmt::format("Enter password for {}", selected_network).c_str());
-      lv_obj_clear_flag(password_input, LV_OBJ_FLAG_HIDDEN);
-      lv_event_send(password_input, LV_EVENT_FOCUSED, NULL);
+        } else if (list_networks.count(selected_network)) {
+            // clear all "tags"
+            auto nid = list_networks.find(selected_network)->second;
+            wpa_event.send_command(fmt::format("SELECT_NETWORK {}", nid));
+            wpa_event.send_command("SAVE_CONFIG");
+        } else {
+            lv_label_set_text(wifi_label, fmt::format("Enter password for {}", selected_network).c_str());
+            lv_obj_clear_flag(password_input, LV_OBJ_FLAG_HIDDEN);
+            lv_event_send(password_input, LV_EVENT_FOCUSED, NULL);
+        }
     }
 
     lv_obj_clear_flag(prompt_cont, LV_OBJ_FLAG_HIDDEN);
