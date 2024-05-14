@@ -185,12 +185,15 @@ void PromptPanel::check_height() {
         int count = 0;
         int y = lv_obj_get_y(last_child);
         int height = lv_obj_get_height(last_child);
-        while(y + height + 8 > lv_obj_get_height(flex) && count < 5) {
+        while(((y + height > lv_obj_get_height(flex)) || height == 0) && count < 5) {
             spdlog::debug("y: {}, h: {}", y, height);
-            if (y + height + 16 > lv_obj_get_height(flex)) {
-                lv_obj_set_height(prompt_cont, (int) (((double)lv_obj_get_height(prompt_cont)) * 1.1));
-                lv_obj_set_width(prompt_cont, (int) (((double)lv_obj_get_width(prompt_cont)) * 1.1));
+            if ((y + height > lv_obj_get_height(flex)) || height == 0) {
+                int newheight = (int) (((double)lv_obj_get_height(prompt_cont)) * 1.1);
+                int newwidth = (int) (((double)lv_obj_get_width(prompt_cont)) * 1.1);
+                spdlog::debug("Increase size of panel: {}, {}", newheight, newwidth);
+                lv_obj_set_size(prompt_cont, newheight, newwidth);
             }
+            lv_obj_update_layout(prompt_cont);
             count++;
             y = lv_obj_get_y(last_child);
             height = lv_obj_get_height(last_child);
@@ -258,7 +261,7 @@ void PromptPanel::handle_macro_response(json &j) {
                 lv_obj_set_style_pad_all(button_group_cont, 0, 0);
                 lv_obj_set_style_outline_pad(button_group_cont, 0, 0);
                 lv_obj_set_style_max_height(button_group_cont, lv_pct(62), 0);
-                lv_obj_set_style_min_height(button_group_cont, 42, 0);
+                lv_obj_set_style_min_height(button_group_cont, 48, 0);
                 lv_obj_set_height(button_group_cont, LV_SIZE_CONTENT);
                 lv_obj_clear_flag(button_group_cont, LV_OBJ_FLAG_SCROLLABLE);
 
@@ -302,8 +305,8 @@ void PromptPanel::handle_macro_response(json &j) {
                     lv_obj_set_size(btn, lv_pct(45), 32);
                     lv_obj_set_style_max_width(btn, lv_pct(45), 0);
                     lv_obj_set_style_min_width(btn, 32, 0);
-                    lv_obj_set_style_max_height(btn, 40, 0);
-                    lv_obj_set_style_min_height(btn, 32, 0);
+                    lv_obj_set_style_max_height(btn, 54, 0);
+                    lv_obj_set_style_min_height(btn, 42, 0);
                     lv_obj_set_style_outline_pad(btn, 0, 0);
                     lv_obj_center(btn);
                     lv_obj_set_flex_grow(btn, 1);
