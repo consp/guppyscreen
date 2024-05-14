@@ -5,6 +5,7 @@
 #include "notify_consumer.h"
 #include "sensor_container.h"
 #include "button_container.h"
+#include "prompt_panel.h"
 #include "numpad.h"
 #include "homing_panel.h"
 #include "extruder_panel.h"
@@ -59,7 +60,6 @@ class MainPanel : public NotifyConsumer {
   void handle_fanpanel_cb(lv_event_t *event);
   void handle_ledpanel_cb(lv_event_t *event);
   void handle_print_cb(lv_event_t *event);
-  void handle_macro_response(json &j);
 
   lv_obj_t *create_button(lv_obj_t *parent,
 			  const void *btn_img,
@@ -96,8 +96,6 @@ class MainPanel : public NotifyConsumer {
     panel->handle_print_cb(event);
   };
 
-  lv_obj_t *prompt(prompt_data *data);
-
  private:
   void create_main(lv_obj_t *parent);
   KWebSocketClient &ws;
@@ -119,6 +117,7 @@ class MainPanel : public NotifyConsumer {
   PrinterTunePanel printertune_panel;
   Numpad numpad;
   ExtruderPanel extruder_panel;
+  PromptPanel prompt_panel;
   SpoolmanPanel &spoolman_panel;
   
   lv_style_t style;
@@ -133,7 +132,6 @@ class MainPanel : public NotifyConsumer {
   ButtonContainer action_btn;
   ButtonContainer led_btn;
   ButtonContainer print_btn;
-
 
 };
 #endif // __MAIN_PANEL_H__

@@ -47,6 +47,7 @@ MainPanel::MainPanel(KWebSocketClient &websocket,
   , printertune_panel(ws, lock, printertune_tab, print_status_panel.get_finetune_panel())
   , numpad(Numpad(main_cont))
   , extruder_panel(ws, lock, numpad, sm)
+  , prompt_panel(websocket, lock, main_cont)
   , spoolman_panel(sm)
   , temp_cont(lv_obj_create(main_cont))
   , temp_chart(lv_chart_create(main_cont))
@@ -63,12 +64,6 @@ MainPanel::MainPanel(KWebSocketClient &websocket,
     lv_style_set_bg_color(&style, lv_palette_darken(LV_PALETTE_GREY, 4));
 
     ws.register_notify_update(this);    
-    ws.register_method_callback("notify_gcode_response", "MainPanel",[this](json& d) { this->handle_macro_response(d); });
-
-    pdata = (prompt_data *) calloc(1, sizeof(prompt_data));
-    pdata->header = NULL;
-    pdata->text = NULL;
-    pdata->buttons = NULL;
 }
 
 MainPanel::~MainPanel() {
@@ -76,8 +71,6 @@ MainPanel::~MainPanel() {
     lv_obj_del(tabview);
     tabview = NULL;
   }
-
-  free(pdata);
 
   sensors.clear();
 }
@@ -309,129 +302,4 @@ void MainPanel::enable_spoolman() {
   spoolman_panel.init();
   setting_panel.enable_spoolman();
   extruder_panel.enable_spoolman();
-}
-
-static void pdata_clean() {
-    if (pdata->header) free(pdata->header);
-    if (pdata->text) free(pdata->text);
-    for (int i = 0; i < pdata->button_size; i++) { free(pdata->buttons[i].text); free(pdata->buttons[i].command); }
-    if (pdata->buttons) free(pdata->buttons);
-    pdata->header = NULL;
-    pdata->text = NULL;
-    pdata->buttons = NULL;
-    pdata->button_size = 0;
-}
-
-void MainPanel::handle_macro_response(json &j) {
-    spdlog::trace("macro response: {}", j.dump());
-    auto &v = j["/params/0"_json_pointer];
-
-    if (!v.is_null()) {
-        spdlog::debug("data found");
-        std::string resp = v.template get<std::string>();
-        std::lock_guard<std::mutex> lock(lv_lock);
-        spdlog::debug("data: {}", resp);
-
-        if (resp.find("// action:", 0) == 0) {
-            // it is an action
-            std::string command = resp.substr(10);
-            spdlog::debug("action: {}", command);
-            if (command.find("prompt_begin") == 0) {
-                pdata_clean();
-                std::string prompt_header = command.substr(13);
-                spdlog::debug("PROMPT_BEGIN: {}", prompt_header);
-
-                if (pdata->header) free(pdata->header);
-                pdata->header = (char *) calloc(sizeof(char), prompt_header.size() + 1);
-                memcpy(pdata->header, prompt_header.c_str(), prompt_header.size());
-            } else if (command.find("prompt_text") == 0) {
-                std::string prompt_text = command.substr(12);
-                spdlog::debug("PROMPT_TEXT: {}", prompt_text);
-                if (pdata->text) free(pdata->text);
-                pdata->text = (char *) calloc(sizeof(char), prompt_text.size() + 1);
-                memcpy(pdata->text, prompt_text.c_str(), prompt_text.size());
-            } else if (command.find("prompt_footer_button") == 0) {
-                int index_first = command.find("|", 21);
-                int index_second = command.find("|", index_first + 1);
-                spdlog::debug("{} {}", index_first, index_second);
-                std::string prompt_footer_button = command.substr(21, index_first - 21);
-                std::string prompt_button_command;
-                std::string prompt_button_type = "none";
-                if (index_second > 0) {
-                    prompt_button_command = command.substr(index_first + 1, index_second - index_first - 1);
-                    prompt_button_type = command.substr(index_second + 1, command.length() - index_second - 1);
-                } else {
-                    prompt_button_command = command.substr(index_first + 1);
-                }
-                spdlog::debug("PROMPT_FOOTER_BUTTON: {} CMD: {}, type {}", prompt_footer_button, prompt_button_command, prompt_button_type);
-                pdata->button_size++;
-                pdata->buttons = (prompt_button *) realloc(pdata->buttons, sizeof(prompt_button) * pdata->button_size);
-                prompt_button *btn = &pdata->buttons[pdata->button_size - 1];
-                btn->text = (char *) calloc(sizeof(char), prompt_footer_button.size() + 1);
-                memcpy(btn->text, prompt_footer_button.c_str(), prompt_footer_button.size());
-                btn->command = (char *) calloc(sizeof(char), prompt_button_command.size() + 1);
-                memcpy(btn->command, prompt_button_command.c_str(), prompt_button_command.size());
-                if (prompt_button_type.compare("primary")) {
-                    btn->type = 0;
-                } else if (prompt_button_type.compare("secondary")) {
-                    btn->type = 1;
-                } else if (prompt_button_type.compare("info")) {
-                    btn->type = 2;
-                } else if (prompt_button_type.compare("warning")) {
-                    btn->type = 3;
-                } else if (prompt_button_type.compare("error")) {
-                    btn->type = 4;
-                } else {
-                    btn->type = 0;
-                }
-                // types do nothing, cannot alter individual buttons
-            } else if (command.find("prompt_show") == 0) {
-                spdlog::debug("PROMPT_SHOW");
-                lv_obj_t *msgbox = prompt(pdata);
-                spdlog::debug("callback");
-                lv_obj_add_event_cb(msgbox, [](lv_event_t *e) {
-                    MainPanel *p = (MainPanel*)e->user_data;
-                    lv_obj_t *obj = lv_obj_get_parent(lv_event_get_target(e));
-                    uint32_t clicked_btn = lv_msgbox_get_active_btn(obj);
-                    spdlog::debug("Button {} pressed", clicked_btn);
-                    spdlog::debug("Command issued: {}", pdata->buttons[clicked_btn].command);
-                    p->ws.gcode_script(fmt::format("{}", pdata->buttons[clicked_btn].command));
-                    lv_msgbox_close(obj);
-
-                }, LV_EVENT_VALUE_CHANGED, this);
-            } else if (command.find("prompt_end") == 0) {
-                spdlog::debug("PROMPT_END");
-                pdata_clean(); 
-            } else {
-                spdlog::debug("action {} --- not supported", command);
-            }
-        }
-        
-    }
-}
-
-lv_obj_t *MainPanel::prompt(prompt_data *data) {
-
-    static char **btns = (char **) calloc(data->button_size, sizeof(char *));
-    for (int i = 0; i < data->button_size; i++) btns[i] = data->buttons[i].text;
-
-    lv_obj_t *mbox1 = lv_msgbox_create(NULL, data->header, data->text, (const char **) btns, false);
-    lv_obj_t *msg = ((lv_msgbox_t*)mbox1)->text;
-    lv_obj_set_style_text_align(msg, LV_TEXT_ALIGN_CENTER, 0);  
-    lv_obj_set_width(msg, LV_PCT(100));
-    lv_obj_center(msg);
-
-    lv_obj_t *btnm = lv_msgbox_get_btns(mbox1);
-    for (int i = 0; i < data->button_size; i++) {
-        lv_btnmatrix_set_btn_ctrl(btnm, i, LV_BTNMATRIX_CTRL_CHECKED);
-    }
-    lv_obj_add_flag(btnm, LV_OBJ_FLAG_FLOATING);
-    lv_obj_align(btnm, LV_ALIGN_BOTTOM_MID, 0, 0);
-
-    auto hscale = (double)lv_disp_get_physical_ver_res(NULL) / 480.0;
-
-    lv_obj_set_size(btnm, LV_PCT(90), (100 / data->button_size) * hscale);
-    lv_obj_set_size(mbox1, LV_PCT(70), LV_PCT(50));
-    lv_obj_center(mbox1);
-    return mbox1;
 }
